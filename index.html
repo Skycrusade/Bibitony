@@ -1,0 +1,1780 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#141124" />
+  <title>Il Bibitone Di Risso</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: #0b0914;
+      color: #fff;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    /* Contenitore 9:16 verticale per telefono / APK */
+    #game-container {
+      position: relative;
+      aspect-ratio: 9 / 16;
+      height: 100dvh;
+      max-width: 100vw;
+      max-height: 100dvh;
+      background: #1e1938;
+      border: 3px solid #ffbe0b;
+      border-radius: 18px;
+      box-shadow: 0 18px 55px rgba(0, 0, 0, 0.85);
+      overflow: hidden;
+    }
+
+    @media (max-aspect-ratio: 9/15) {
+      #game-container {
+        width: 100vw;
+        height: 100dvh;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+      }
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Schermate overlay */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 22px 18px;
+      transition: opacity 0.3s ease;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Menu Principale Verticale */
+    #menu-screen {
+      background: radial-gradient(circle at 50% 42%, rgba(56, 40, 108, 0.84) 0%, rgba(16, 13, 32, 0.96) 100%);
+      justify-content: space-between;
+      padding: 58px 20px 44px;
+      z-index: 10;
+    }
+
+    .title-block {
+      margin-top: 12px;
+    }
+
+    .game-title {
+      font-size: clamp(2.1rem, 8.5vw, 3rem);
+      font-weight: 900;
+      line-height: 1.08;
+      color: #ffbe0b;
+      text-shadow: 0 4px 0 #fb5607, 0 10px 24px rgba(0, 0, 0, 0.75);
+      letter-spacing: 1.5px;
+      animation: bounceTitle 1.6s infinite ease-in-out;
+    }
+
+    .game-subtitle {
+      font-size: clamp(0.92rem, 3.6vw, 1.05rem);
+      color: #dcd6ff;
+      margin-top: 14px;
+      line-height: 1.4;
+      padding: 0 8px;
+    }
+
+    @keyframes bounceTitle {
+      0%, 100% { transform: translateY(0) rotate(-1deg); }
+      50% { transform: translateY(-7px) rotate(1deg); }
+    }
+
+    .btn-primary {
+      width: 90%;
+      max-width: 340px;
+      background: linear-gradient(180deg, #ff006e 0%, #c90057 100%);
+      color: #fff;
+      border: 4px solid #ffbe0b;
+      border-radius: 50px;
+      padding: 18px 24px;
+      font-size: clamp(1.25rem, 5vw, 1.55rem);
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 8px 0 #7a0035, 0 15px 30px rgba(0, 0, 0, 0.6);
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+      letter-spacing: 1px;
+    }
+
+    .btn-primary:active {
+      transform: translateY(4px);
+      box-shadow: 0 3px 0 #7a0035;
+    }
+
+    /* HUD Laboratorio Ricetta Verticale */
+    #mixing-ui {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 38px 11px 10px;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .top-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+    }
+
+    .recipe-note {
+      width: 100%;
+      background: #fff9c4;
+      color: #2b2618;
+      border-radius: 10px;
+      padding: 8px 11px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.45);
+      border-top: 7px solid #fbc02d;
+      pointer-events: auto;
+    }
+
+    .recipe-note h3 {
+      font-size: 0.84rem;
+      text-transform: uppercase;
+      border-bottom: 2px dashed #b5a642;
+      padding-bottom: 3px;
+      margin-bottom: 4px;
+      color: #5d4037;
+    }
+
+    .recipe-note ul {
+      list-style: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .recipe-note li.mystery {
+      color: #6a1b9a;
+      background: rgba(156, 39, 176, 0.11);
+      padding: 3px 6px;
+      border-radius: 5px;
+      margin-top: 4px;
+      border-left: 3px solid #9c27b0;
+      font-size: 0.76rem;
+      line-height: 1.24;
+    }
+
+    .mystery-hint-text {
+      display: inline;
+      font-style: italic;
+      font-weight: 600;
+      color: #4a148c;
+    }
+
+    .selected-panel {
+      width: 100%;
+      background: rgba(20, 17, 36, 0.9);
+      border: 2px solid #8338ec;
+      border-radius: 10px;
+      padding: 6px 9px;
+      pointer-events: auto;
+    }
+
+    .selected-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .selected-panel h4 {
+      color: #ffbe0b;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+    }
+
+    .selected-slots {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+    }
+
+    .slot {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px dashed #6c639c;
+      border-radius: 6px;
+      padding: 3px 4px;
+      font-size: 0.7rem;
+      min-height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      line-height: 1.12;
+    }
+
+    .slot.filled {
+      background: rgba(131, 56, 236, 0.42);
+      border: 1px solid #ffbe0b;
+      font-weight: 700;
+    }
+
+    .bottom-shelf-area {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      width: 100%;
+      pointer-events: auto;
+    }
+
+    .ingredients-shelf {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+    }
+
+    .ing-card {
+      background: linear-gradient(180deg, #2d2654 0%, #1d1838 100%);
+      border: 2px solid #564d8a;
+      border-radius: 8px;
+      padding: 4px 3px;
+      text-align: center;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      transition: transform 0.08s ease, border-color 0.08s ease, background 0.08s ease;
+    }
+
+    .ing-card:active {
+      transform: scale(0.96);
+    }
+
+    .ing-card.selected {
+      border-color: #ffbe0b;
+      background: linear-gradient(180deg, #5a2a82 0%, #371852 100%);
+      box-shadow: 0 0 10px rgba(255, 190, 11, 0.55);
+    }
+
+    .ing-icon {
+      font-size: 1.05rem;
+      line-height: 1.05;
+      margin-bottom: 1px;
+    }
+
+    .ing-dose {
+      font-size: 0.69rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.1;
+    }
+
+    .btn-mix {
+      width: 100%;
+      padding: 12px;
+      font-size: 1.05rem;
+      font-weight: 900;
+      border: none;
+      border-radius: 12px;
+      background: #06d6a0;
+      color: #0b251e;
+      cursor: pointer;
+      box-shadow: 0 5px 0 #048a67;
+      transition: transform 0.08s ease;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-mix:disabled {
+      background: #4a4563;
+      color: #8f8aa8;
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+
+    .btn-mix:not(:disabled):active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 #048a67;
+    }
+
+    /* Schermata Nera Finale */
+    #blackout-screen {
+      background: #000000;
+      z-index: 30;
+      padding: 28px;
+    }
+
+    #blackout-message {
+      font-size: clamp(1.55rem, 6.2vw, 2.1rem);
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1.35;
+      margin-bottom: 24px;
+      animation: fadeInText 0.6s ease;
+    }
+
+    #blackout-sub {
+      font-size: 0.92rem;
+      color: #9e9e9e;
+    }
+
+    @keyframes fadeInText {
+      from { opacity: 0; transform: scale(0.94); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* Controllo Audio in alto */
+    #audio-toggle {
+      position: absolute;
+      top: 7px;
+      right: 10px;
+      z-index: 40;
+      background: rgba(20, 17, 36, 0.88);
+      border: 2px solid #ffbe0b;
+      color: #ffbe0b;
+      border-radius: 20px;
+      padding: 3px 9px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <!-- Risoluzione logica verticale 9:16 (540x960) -->
+    <canvas id="gameCanvas" width="540" height="960"></canvas>
+
+    <!-- MENU PRINCIPALE -->
+    <div id="menu-screen" class="overlay">
+      <div class="title-block">
+        <div class="game-title">🧪 IL BIBITONE<br>DI RISSO 🧪</div>
+        <p class="game-subtitle">
+          Decifra i 2 indizi segreti per completare la ricetta, poi tocca le frecce nella zona d'impatto per portare Risso fino al divano!
+        </p>
+      </div>
+      <button id="start-btn" class="btn-primary">PROVA IL BIBITONE!</button>
+    </div>
+
+    <!-- INTERFACCIA CREAZIONE BIBITONE (VERTICALE) -->
+    <div id="mixing-ui" class="hidden">
+      <div class="top-cards">
+        <div class="recipe-note">
+          <h3>📋 Ricetta del Giorno (1 noto + 2 segreti)</h3>
+          <ul id="recipe-list"></ul>
+        </div>
+
+        <div class="selected-panel">
+          <div class="selected-header">
+            <h4>🥤 Nello Shaker (<span id="sel-count">0</span>/3)</h4>
+          </div>
+          <div class="selected-slots" id="selected-slots">
+            <div class="slot">1. Vuoto</div>
+            <div class="slot">2. Vuoto</div>
+            <div class="slot">3. Vuoto</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-shelf-area">
+        <div class="ingredients-shelf" id="ingredients-shelf"></div>
+        <button id="mix-btn" class="btn-mix" disabled>SHAKERA E BEVI!</button>
+      </div>
+    </div>
+
+    <!-- SCHERMATA NERA MESSAGGI FINALI -->
+    <div id="blackout-screen" class="overlay hidden">
+      <div id="blackout-message"></div>
+      <div id="blackout-sub">Tocca per tornare al menù principale...</div>
+    </div>
+
+    <button id="audio-toggle">🔊 ON</button>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 0. SPRITE FACCIA DI RISSO (Dalla foto allegata)
+    // =========================================================================
+    const RISSO_FACE_DATA_URI = "data:image/webp;base64,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";
+
+    const rissoFaceImg = new Image();
+    rissoFaceImg.src = RISSO_FACE_DATA_URI;
+
+    // =========================================================================
+    // 1. MOTORE AUDIO PROCEDURALE (Musichetta buffa in loop + Effetti Sonori)
+    // =========================================================================
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+        this.isPlayingMusic = false;
+        this.step = 0;
+        this.fastMode = false;
+        this.melody = [
+          261.63, 329.63, 392.00, 329.63,
+          293.66, 349.23, 440.00, 349.23,
+          329.63, 392.00, 493.88, 392.00,
+          523.25, 392.00, 329.63, 261.63
+        ];
+        this.bass = [
+          130.81, 196.00, 130.81, 196.00,
+          146.83, 220.00, 146.83, 220.00,
+          164.81, 246.94, 164.81, 246.94,
+          130.81, 196.00, 130.81, 130.81
+        ];
+      }
+
+      init() {
+        if (!this.ctx) {
+          this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      startMusic() {
+        this.init();
+        if (this.isPlayingMusic) return;
+        this.isPlayingMusic = true;
+        this.step = 0;
+        const tick = () => {
+          if (!this.isPlayingMusic) return;
+          if (!this.muted) this.playMusicStep();
+          setTimeout(tick, this.fastMode ? 166 : 230);
+        };
+        tick();
+      }
+
+      playMusicStep() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const idx = this.step % this.melody.length;
+        const pitchMult = this.fastMode ? 1.09 : 1.0;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(this.melody[idx] * pitchMult, now);
+        osc.frequency.linearRampToValueAtTime(this.melody[idx] * pitchMult * 1.03, now + 0.12);
+
+        gain.gain.setValueAtTime(0.032, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.17);
+
+        const bassOsc = this.ctx.createOscillator();
+        const bassGain = this.ctx.createGain();
+        bassOsc.type = 'triangle';
+        bassOsc.frequency.setValueAtTime(this.bass[idx] * pitchMult, now);
+
+        bassGain.gain.setValueAtTime(0.055, now);
+        bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+        bassOsc.connect(bassGain);
+        bassGain.connect(this.ctx.destination);
+        bassOsc.start(now);
+        bassOsc.stop(now + 0.19);
+
+        this.step++;
+      }
+
+      playPop(freq = 520) {
+        if (this.muted) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.5, now + 0.08);
+        gain.gain.setValueAtTime(0.13, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.1);
+      }
+
+      playShake() {
+        if (this.muted) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const bufferSize = this.ctx.sampleRate * 0.08;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 1800;
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        noise.start(now);
+      }
+
+      playFail() {
+        if (this.muted) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const notes = [311.13, 293.66, 277.18, 220.00];
+        notes.forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(f, now + i * 0.18);
+          gain.gain.setValueAtTime(0.09, now + i * 0.18);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.18 + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.18);
+          osc.stop(now + i * 0.18 + 0.26);
+        });
+      }
+
+      playWin() {
+        if (this.muted) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const notes = [261.63, 329.63, 392.00, 523.25];
+        notes.forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, now + i * 0.14);
+          gain.gain.setValueAtTime(0.12, now + i * 0.14);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.14 + 0.45);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.14);
+          osc.stop(now + i * 0.14 + 0.46);
+        });
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    document.addEventListener('pointerdown', () => sound.startMusic(), { once: true });
+
+    const audioToggleBtn = document.getElementById('audio-toggle');
+    audioToggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      sound.init();
+      sound.muted = !sound.muted;
+      if (!sound.muted && !sound.isPlayingMusic) sound.startMusic();
+      e.target.textContent = sound.muted ? '🔇 OFF' : '🔊 ON';
+    });
+
+    // =========================================================================
+    // 2. DATABASE AMPLIATO (36 INGREDIENTI CON INDIZI FACILI, MEDI E DIFFICILI)
+    // =========================================================================
+    const INGREDIENTS_POOL = [
+      {
+        id: 'rivotril', icon: '💧', doses: ['20 gocce di Rivotril', '40 gocce di Rivotril'],
+        hints: [
+          'Si conta in piccole gocce e ha un nome di 8 lettere',
+          'Il suo principio attivo inizia per C, ma sulla scatola porta una R',
+          'Celebre flacone contagocce amato dai musicisti notturni, 4 vocali e 4 consonanti'
+        ]
+      },
+      {
+        id: 'xanax', icon: '💊', doses: ['15 gocce di Xanax', '30 gocce di Xanax'],
+        hints: [
+          'Si misura a gocce e ha un nome palindromo',
+          'Cinque lettere che si leggono identiche anche allo specchio',
+          'Due croci agli estremi custodiscono una coppia di vocali uguali'
+        ]
+      },
+      {
+        id: 'tavor', icon: '🧪', doses: ['2 pastiglie di Tavor', '3 pastiglie di Tavor'],
+        hints: [
+          'Non si versa a gocce e ha un nome di 5 lettere',
+          'Cinque lettere solide: inizia con una dentale e finisce con una vibrante',
+          'Se letto al contrario richiama quasi il movimento di una ruota'
+        ]
+      },
+      {
+        id: 'valium', icon: '🧴', doses: ['25 gocce di Valium', '35 gocce di Valium'],
+        hints: [
+          'Si dosa a gocce e termina con una consonante nasale',
+          'Un grande classico da armadietto degli anni ’60, qui in gocce',
+          'Il suffisso finale lo fa sembrare un elemento della tavola periodica'
+        ]
+      },
+      {
+        id: 'lexotan', icon: '🧫', doses: ['20 gocce di Lexotan', '30 gocce di Lexotan'],
+        hints: [
+          'Contiene una X nel mezzo e si versa a gocce',
+          'Tre sillabe liquide con una doppia consonante nascosta in una lettera sola',
+          'Inizia come una legge latina e finisce come un’abbronzatura inglese'
+        ]
+      },
+      {
+        id: 'en', icon: '💧', doses: ['18 gocce di EN', '28 gocce di EN'],
+        hints: [
+          'Ha il nome più breve che si possa immaginare',
+          'Una vocale e una consonante: basta un soffio per pronunciarlo',
+          'Coincide esattamente con la preposizione francese che significa “in”'
+        ]
+      },
+      {
+        id: 'halcion', icon: '💊', doses: ['1 compressa di Halcion', '2 compresse di Halcion'],
+        hints: [
+          'Non è liquido e inizia con una lettera muta',
+          'Si prende a compresse, nome dal suono mitologico',
+          'Nella mitologia greca era l’uccello marino che calmava le tempeste'
+        ]
+      },
+      {
+        id: 'stilnox', icon: '🌙', doses: ['1 pastiglia di Stilnox', '2 pastiglie di Stilnox'],
+        hints: [
+          'Richiama la notte nel nome e non si misura a gocce',
+          'Finisce con una X e si conta a pastiglie',
+          'Fonde insieme la quiete inglese e l’oscurità latina in forma solida'
+        ]
+      },
+      {
+        id: 'minias', icon: '💧', doses: ['20 gocce di Minias', '30 gocce di Minias'],
+        hints: [
+          'Suona come qualcosa di piccolo, ma si conta a gocce',
+          'Sei lettere, inizia per M e scende dal contagocce',
+          'Sembra il plurale di una taglia ridotta, eppure ti stende sul colpo'
+        ]
+      },
+      {
+        id: 'serenase', icon: '🧪', doses: ['15 gocce di Serenase', '25 gocce di Serenase'],
+        hints: [
+          'Nel nome sembra promettere calma, dosato a gocce',
+          'Otto lettere che iniziano con una sibilante',
+          'Nasconde quasi per intero un aggettivo meteorologico senza nuvole'
+        ]
+      },
+      {
+        id: 'trittico', icon: '💊', doses: ['25 gocce di Trittico', '1 compressa di Trittico'],
+        hints: [
+          'Il nome evoca il numero tre',
+          'Otto lettere con una doppia consonante al centro',
+          'Come una pala d’altare divisa in tre pannelli, ma da ingoiare'
+        ]
+      },
+      {
+        id: 'zoloft', icon: '💊', doses: ['1 pastiglia di Zoloft', '2 pastiglie di Zoloft'],
+        hints: [
+          'Inizia con l’ultima lettera dell’alfabeto',
+          'Non si versa a gocce e ha un suono secco',
+          'Comincia dove finisce l’alfabeto e termina con una soffitta inglese'
+        ]
+      },
+      {
+        id: 'lyrica', icon: '🔮', doses: ['1 capsula di Lyrica', '2 capsule di Lyrica'],
+        hints: [
+          'Il nome sembra musicale e si prende in capsule',
+          'Contiene una Y e non è un liquido',
+          'Evoca il teatro d’opera, ma arriva in capsule'
+        ]
+      },
+      {
+        id: 'atarax', icon: '💊', doses: ['1 compressa di Atarax', '2 compresse di Atarax'],
+        hints: [
+          'Inizia per A e finisce per X',
+          'Non si conta a gocce e ha tre A nel nome',
+          'Dalla filosofia stoica greca dell’imperturbabilità, chiuso da una X'
+        ]
+      },
+      {
+        id: 'nozinan', icon: '💧', doses: ['15 gocce di Nozinan', '25 gocce di Nozinan'],
+        hints: [
+          'Contiene una Z nel mezzo e si dosa a gocce',
+          'Sette lettere con una N all’inizio e alla fine',
+          'Comincia con una negazione e ospita una Z al centro'
+        ]
+      },
+      {
+        id: 'talofen', icon: '💧', doses: ['20 gocce di Talofen', '30 gocce di Talofen'],
+        hints: [
+          'Sette lettere, inizia per T e si conta a gocce',
+          'Suona chimico e si versa dal contagocce',
+          'Sette lettere liquide con tre vocali tutte diverse: A, O, E'
+        ]
+      },
+      {
+        id: 'songar', icon: '💧', doses: ['20 gocce di Songar', '35 gocce di Songar'],
+        hints: [
+          'Il nome ricorda il sonno, dosato a gocce',
+          'Sei lettere che finiscono per R',
+          'Inizia come una canzone in inglese, ma non serve a cantare'
+        ]
+      },
+      {
+        id: 'prazene', icon: '💊', doses: ['15 gocce di Prazene', '20 gocce di Prazene'],
+        hints: [
+          'Contiene una Z e si misura a gocce',
+          'Sette lettere con una P iniziale',
+          'Unica vocale ripetuta due volte sul finale, preceduta da una Z'
+        ]
+      },
+      {
+        id: 'depakin', icon: '🧪', doses: ['15ml di Depakin', '25ml di Depakin'],
+        hints: [
+          'Non si conta a gocce ma a millilitri',
+          'Sette lettere con una K nascosta',
+          'Ospita una consonante straniera rara in italiano e si versa a ml'
+        ]
+      },
+      {
+        id: 'quietid', icon: '💧', doses: ['25 gocce di Quietid', '40 gocce di Quietid'],
+        hints: [
+          'Suggerisce silenzio nel nome e scende a gocce',
+          'Inizia con la Q e si dosa a gocce',
+          'L’unica voce dell’armadietto che richiede la U dopo la prima lettera'
+        ]
+      },
+      {
+        id: 'cbd', icon: '🌿', doses: ['2g di CBD', '3.5g di CBD'],
+        hints: [
+          'Una sigla di tre lettere pesata in grammi',
+          'Origine botanica, ma non è un liquido',
+          'Tre consonanti consecutive: la terza, la seconda e la quarta dell’alfabeto'
+        ]
+      },
+      {
+        id: 'cbn', icon: '🍂', doses: ['1.5g di CBN', '2.5g di CBN'],
+        hints: [
+          'Tre lettere maiuscole, si pesa sulla bilancia',
+          'Derivato vegetale misurato in grammi',
+          'Sigla di tre consonanti che differisce dal cugino più famoso solo per la finale'
+        ]
+      },
+      {
+        id: 'melatonina', icon: '✨', doses: ['10mg di Melatonina', '20mg di Melatonina'],
+        hints: [
+          'Si misura in milligrammi e richiama il buio',
+          'Non è a gocce: dieci lettere che iniziano per M',
+          'L’ormone della ghiandola pineale che regola l’orologio circadiano'
+        ]
+      },
+      {
+        id: 'camomilla', icon: '🌼', doses: ['3 bustine di Camomilla', '2 tazze di Camomilla'],
+        hints: [
+          'Un classico infuso da cucina, niente farmacia',
+          'Sa di fiori gialli e bianchi',
+          'Dal greco “mela di terra”, si prepara in acqua bollente'
+        ]
+      },
+      {
+        id: 'valeriana', icon: '🍃', doses: ['40 gocce di Valeriana', '60 gocce di Valeriana'],
+        hints: [
+          'Radice dall’odore intenso, qui dosata a gocce',
+          'Viene dal mondo vegetale e inizia per V',
+          'Pianta erbacea amata dai gatti ma temuta dagli olfatti delicati'
+        ]
+      },
+      {
+        id: 'passiflora', icon: '🌺', doses: ['30 gocce di Passiflora', '50 gocce di Passiflora'],
+        hints: [
+          'Un fiore esotico concentrato in gocce',
+          'Dieci lettere, origine puramente erboristica',
+          'Fonde un sentimento ardente e il regno vegetale in un solo nome'
+        ]
+      },
+      {
+        id: 'escolzia', icon: '🌸', doses: ['35 gocce di Escolzia', '50 gocce di Escolzia'],
+        hints: [
+          'Papavero dorato in forma liquida',
+          'Inizia per E e contiene una Z',
+          'Fiore simbolo della California, spremuto in gocce'
+        ]
+      },
+      {
+        id: 'biancospino', icon: '🌳', doses: ['30 gocce di Biancospino', '45 gocce di Biancospino'],
+        hints: [
+          'Un arbusto spinoso trasformato in gocce',
+          'Undici lettere, nome composto dalla natura',
+          'Unisce un colore candido e una punta acuminata'
+        ]
+      },
+      {
+        id: 'tiglio', icon: '🍀', doses: ['25 gocce di Tiglio', '40 gocce di Tiglio'],
+        hints: [
+          'Un albero da viale spremuto in gocce',
+          'Sei lettere, origine vegetale',
+          'Albero dai fiori giallognoli e profumati, celebre per le tisane serali'
+        ]
+      },
+      {
+        id: 'kava', icon: '🥥', doses: ['2 cucchiai di Kava Kava', '1 tazza di Kava Kava'],
+        hints: [
+          'Radice esotica del Pacifico, nome ripetuto due volte',
+          'Non viene dal contagocce e contiene due K',
+          'Bevanda cerimoniale della Polinesia che raddoppia se stessa'
+        ]
+      },
+      {
+        id: 'ashwagandha', icon: '🌱', doses: ['2g di Ashwagandha', '3g di Ashwagandha'],
+        hints: [
+          'Radice orientale dal nome lunghissimo',
+          'Si pesa in grammi e viene dall’erboristeria',
+          'In sanscrito significa “odore di cavallo”, pilastro dell’Ayurveda'
+        ]
+      },
+      {
+        id: 'sciroppo', icon: '🍇', doses: ['15ml di Sciroppo Viola', '30ml di Sciroppo Viola'],
+        hints: [
+          'Denso, dolce e colorato: si misura in ml',
+          'Non è a gocce e ha una tonalità scura',
+          'Liquido viscoso dal colore dell’ametista che scende lento nel misurino'
+        ]
+      },
+      {
+        id: 'luppolo', icon: '🍺', doses: ['25 gocce di Luppolo', '40 gocce di Luppolo'],
+        hints: [
+          'Lo stesso ingrediente che dà l’amaro alla birra',
+          'Sette lettere, qui usato in gocce',
+          'Rampicante parente della canapa che regala amarezza ai mastri birrai'
+        ]
+      },
+      {
+        id: 'magnesio', icon: '⚡', doses: ['2 cucchiai di Magnesio', '1 misurino di Magnesio'],
+        hints: [
+          'Un minerale in polvere, non un sedativo chimico',
+          'Si dosa a cucchiai o misurini',
+          'Elemento chimico numero 12, qui dosato a cucchiai'
+        ]
+      },
+      {
+        id: 'loto', icon: '🪷', doses: ['15 gocce di Loto', '25 gocce di Loto'],
+        hints: [
+          'Un fiore acquatico in quattro lettere',
+          'Si dosa a gocce e ha un nome cortissimo',
+          'Pianta sacra che galleggia sugli stagni d’Oriente, quattro lettere'
+        ]
+      },
+      {
+        id: 'lavanda', icon: '💜', doses: ['10 gocce di Lavanda', '20 gocce di Lavanda'],
+        hints: [
+          'Profuma i cassetti e colora i campi d’estate',
+          'Sette lettere, origine floreale in gocce',
+          'Il suo nome coincide con il gerundio latino dell’azione di detergere'
+        ]
+      }
+    ];
+
+    // =========================================================================
+    // 3. STATO DEL GIOCO E RIFERIMENTI DOM
+    // =========================================================================
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const menuScreen = document.getElementById('menu-screen');
+    const mixingUI = document.getElementById('mixing-ui');
+    const blackoutScreen = document.getElementById('blackout-screen');
+    const blackoutMsg = document.getElementById('blackout-message');
+
+    const recipeListEl = document.getElementById('recipe-list');
+    const selectedSlotsEl = document.getElementById('selected-slots');
+    const selCountEl = document.getElementById('sel-count');
+    const mixBtn = document.getElementById('mix-btn');
+    const shelfEl = document.getElementById('ingredients-shelf');
+
+    let gameState = 'MENU'; // MENU | MIXING | SHAKING | RHYTHM | COUCH_WIN | FALL_FAIL | BLACKOUT
+    let stateTimer = 0;
+    let lastTime = performance.now();
+    let blackoutTimeout = null;
+
+    // Dati fase ricetta (2 segreti su 3!)
+    let tableIngredients = [];
+    let targetRecipe = [];
+    let mysteryMap = new Map(); // idx -> hint string
+    let selectedIngredients = [];
+
+    // Dati animazione shake/drink
+    let shakePhase = 'SHAKE';
+    let shakeTick = 0;
+    let isRecipeCorrect = false;
+
+    // Dati minigioco Rhythm Game Verticale (+5% velocità rispetto alla versione precedente)
+    const DIRS = [
+      { key: 'ArrowLeft', alt: 'a', color: '#ff006e' },
+      { key: 'ArrowDown', alt: 's', color: '#3a86ff' },
+      { key: 'ArrowUp', alt: 'w', color: '#06d6a0' },
+      { key: 'ArrowRight', alt: 'd', color: '#ffbe0b' }
+    ];
+
+    const LANE_X = [82, 207, 333, 458];
+    const LANE_TOP_Y = 390;
+    const TARGET_Y = 825;
+
+    let rhythmTimeLeft = 10.7;
+    let rhythmMaxTime = 10.7;
+    let rissoProgress = 0;
+    let rhythmNotes = [];
+    let spawnTimer = 0;
+    let hitFeedback = { text: '', color: '#fff', alpha: 0 };
+    let wobblePhase = 0;
+    let mistakes = 0;
+    const MAX_MISTAKES = 4;
+    let screenShake = 0;
+    let hitParticles = [];
+    let laneFlash = [0, 0, 0, 0];
+
+    // =========================================================================
+    // 4. LOGICA DI AVVIO E RICETTA (2 SEGRETI SU 3 + INDIZI VARI)
+    // =========================================================================
+    document.getElementById('start-btn').addEventListener('click', () => {
+      sound.startMusic();
+      sound.playPop(660);
+      startMixingPhase();
+    });
+
+    function shuffle(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function startMixingPhase() {
+      gameState = 'MIXING';
+      sound.fastMode = false;
+      selectedIngredients = [];
+
+      const pickedPool = shuffle(INGREDIENTS_POOL).slice(0, 15);
+      tableIngredients = pickedPool.map(item => ({
+        id: item.id,
+        icon: item.icon,
+        label: item.doses[Math.floor(Math.random() * item.doses.length)],
+        hints: item.hints
+      }));
+
+      targetRecipe = shuffle(tableIngredients).slice(0, 3);
+
+      // 2 ingredienti segreti su 3!
+      mysteryMap.clear();
+      const secretIndices = shuffle([0, 1, 2]).slice(0, 2);
+      secretIndices.forEach((idx, order) => {
+        const item = targetRecipe[idx];
+        // Alterna difficoltà tra indizi facili/medi e difficili
+        const preferredTier = order === 0
+          ? Math.floor(Math.random() * item.hints.length)
+          : (Math.random() < 0.65 ? 2 : 1);
+        const hintText = item.hints[Math.min(preferredTier, item.hints.length - 1)];
+        mysteryMap.set(idx, hintText);
+      });
+
+      renderRecipeNote();
+      renderShelf();
+      renderSelectedSlots();
+
+      menuScreen.classList.add('hidden');
+      blackoutScreen.classList.add('hidden');
+      mixingUI.classList.remove('hidden');
+    }
+
+    function renderRecipeNote() {
+      recipeListEl.innerHTML = '';
+      let secretCounter = 1;
+      targetRecipe.forEach((item, idx) => {
+        const li = document.createElement('li');
+        if (mysteryMap.has(idx)) {
+          li.className = 'mystery';
+          li.innerHTML = `• <strong>??? Segreto #${secretCounter++}:</strong> <span class="mystery-hint-text">"${mysteryMap.get(idx)}"</span>`;
+        } else {
+          li.textContent = `• ${item.label}`;
+        }
+        recipeListEl.appendChild(li);
+      });
+    }
+
+    function renderShelf() {
+      shelfEl.innerHTML = '';
+      tableIngredients.forEach(item => {
+        const card = document.createElement('div');
+        const isSelected = selectedIngredients.some(s => s.id === item.id);
+        card.className = 'ing-card' + (isSelected ? ' selected' : '');
+        card.innerHTML = `
+          <div class="ing-icon">${item.icon}</div>
+          <div class="ing-dose">${item.label}</div>
+        `;
+        card.addEventListener('click', () => toggleIngredient(item));
+        shelfEl.appendChild(card);
+      });
+    }
+
+    function toggleIngredient(item) {
+      if (gameState !== 'MIXING') return;
+      const existingIdx = selectedIngredients.findIndex(s => s.id === item.id);
+      if (existingIdx !== -1) {
+        selectedIngredients.splice(existingIdx, 1);
+        sound.playPop(380);
+      } else {
+        if (selectedIngredients.length >= 3) return;
+        selectedIngredients.push(item);
+        sound.playPop(580);
+      }
+      renderShelf();
+      renderSelectedSlots();
+    }
+
+    function renderSelectedSlots() {
+      selCountEl.textContent = selectedIngredients.length;
+      selectedSlotsEl.innerHTML = '';
+      for (let i = 0; i < 3; i++) {
+        const slot = document.createElement('div');
+        const ing = selectedIngredients[i];
+        if (ing) {
+          slot.className = 'slot filled';
+          slot.innerHTML = `${ing.icon} ${ing.label}`;
+          slot.style.cursor = 'pointer';
+          slot.addEventListener('click', () => toggleIngredient(ing));
+        } else {
+          slot.className = 'slot';
+          slot.textContent = `${i + 1}. Vuoto`;
+        }
+        selectedSlotsEl.appendChild(slot);
+      }
+      mixBtn.disabled = selectedIngredients.length !== 3;
+    }
+
+    mixBtn.addEventListener('click', () => {
+      if (selectedIngredients.length !== 3) return;
+
+      const targetIds = targetRecipe.map(i => i.id).sort();
+      const chosenIds = selectedIngredients.map(i => i.id).sort();
+      isRecipeCorrect = targetIds.every((val, idx) => val === chosenIds[idx]);
+
+      mixingUI.classList.add('hidden');
+      gameState = 'SHAKING';
+      shakePhase = 'SHAKE';
+      stateTimer = 0;
+      shakeTick = 0;
+    });
+
+    // =========================================================================
+    // 5. MINIGIOCO RHYTHM GAME VERTICALE (+5% VELOCITÀ)
+    // =========================================================================
+    function startRhythmMinigame() {
+      gameState = 'RHYTHM';
+      sound.fastMode = true;
+      rhythmTimeLeft = 10.7;
+      rhythmMaxTime = 10.7;
+      rissoProgress = 0;
+      rhythmNotes = [];
+      hitParticles = [];
+      laneFlash = [0, 0, 0, 0];
+      spawnTimer = 0.19;
+      mistakes = 0;
+      screenShake = 0;
+      hitFeedback = { text: 'TOCCA LE FRECCE NELLA ZONA!', color: '#ffbe0b', alpha: 1 };
+    }
+
+    function spawnHitParticles(x, y, color) {
+      for (let i = 0; i < 14; i++) {
+        const angle = (Math.PI * 2 * i) / 14 + Math.random() * 0.3;
+        const speed = 110 + Math.random() * 170;
+        hitParticles.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          color,
+          life: 0.38
+        });
+      }
+    }
+
+    function triggerRhythmInput(dirIndex) {
+      if (gameState !== 'RHYTHM') return;
+      laneFlash[dirIndex] = 1.0;
+
+      let bestNote = null;
+      let bestDist = Infinity;
+
+      for (const note of rhythmNotes) {
+        if (!note.hit && !note.missed && note.dir === dirIndex) {
+          const dist = Math.abs(note.y - TARGET_Y);
+          if (dist < bestDist) {
+            bestDist = dist;
+            bestNote = note;
+          }
+        }
+      }
+
+      if (bestNote && bestDist <= 66) {
+        bestNote.hit = true;
+        const isPerfect = bestDist <= 28;
+        rissoProgress = Math.min(100, rissoProgress + (isPerfect ? 10 : 7));
+        sound.playPop(isPerfect ? 780 : 620);
+        spawnHitParticles(LANE_X[dirIndex], bestNote.y, DIRS[dirIndex].color);
+        hitFeedback = {
+          text: isPerfect ? 'PERFETTO!!' : 'BUONO!',
+          color: isPerfect ? '#06d6a0' : '#ffbe0b',
+          alpha: 1
+        };
+
+        if (rissoProgress >= 100) {
+          sound.fastMode = false;
+          gameState = 'COUCH_WIN';
+          stateTimer = 0;
+          sound.playWin();
+        }
+      } else {
+        mistakes++;
+        rissoProgress = Math.max(0, rissoProgress - 7);
+        screenShake = 0.25;
+        sound.playPop(165);
+        hitFeedback = { text: `BARCOLLA! (${mistakes}/${MAX_MISTAKES})`, color: '#ff006e', alpha: 1 };
+        if (mistakes >= MAX_MISTAKES) {
+          failRhythmGame();
+        }
+      }
+    }
+
+    function failRhythmGame() {
+      sound.fastMode = false;
+      gameState = 'FALL_FAIL';
+      stateTimer = 0;
+      sound.playFail();
+    }
+
+    canvas.addEventListener('pointerdown', (e) => {
+      if (gameState !== 'RHYTHM') return;
+      e.preventDefault();
+
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const cx = (e.clientX - rect.left) * scaleX;
+      const cy = (e.clientY - rect.top) * scaleY;
+
+      let touchedNote = null;
+      let minTouchDist = Infinity;
+      for (const note of rhythmNotes) {
+        if (note.hit || note.missed) continue;
+        const nx = LANE_X[note.dir];
+        const dist = Math.hypot(cx - nx, cy - note.y);
+        if (dist <= 65 && dist < minTouchDist) {
+          minTouchDist = dist;
+          touchedNote = note;
+        }
+      }
+
+      if (touchedNote) {
+        triggerRhythmInput(touchedNote.dir);
+        return;
+      }
+
+      if (cy >= LANE_TOP_Y - 20 && cy <= 945) {
+        let closestLane = 0;
+        let closestLaneDist = Infinity;
+        for (let i = 0; i < 4; i++) {
+          const d = Math.abs(cx - LANE_X[i]);
+          if (d < closestLaneDist) {
+            closestLaneDist = d;
+            closestLane = i;
+          }
+        }
+        if (closestLaneDist <= 68) {
+          triggerRhythmInput(closestLane);
+        }
+      }
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (gameState !== 'RHYTHM') return;
+      const k = e.key.toLowerCase();
+      const idx = DIRS.findIndex(d => d.key.toLowerCase() === k || d.alt === k);
+      if (idx !== -1) {
+        e.preventDefault();
+        triggerRhythmInput(idx);
+      }
+    });
+
+    // =========================================================================
+    // 6. SCHERMATA NERA E RITORNO AL MENU
+    // =========================================================================
+    function showBlackout(message) {
+      gameState = 'BLACKOUT';
+      sound.fastMode = false;
+      mixingUI.classList.add('hidden');
+      blackoutMsg.textContent = message;
+      blackoutScreen.classList.remove('hidden');
+
+      clearTimeout(blackoutTimeout);
+      blackoutTimeout = setTimeout(() => {
+        returnToMenu();
+      }, 3800);
+    }
+
+    blackoutScreen.addEventListener('click', () => {
+      if (gameState === 'BLACKOUT') {
+        clearTimeout(blackoutTimeout);
+        returnToMenu();
+      }
+    });
+
+    function returnToMenu() {
+      blackoutScreen.classList.add('hidden');
+      mixingUI.classList.add('hidden');
+      gameState = 'MENU';
+      menuScreen.classList.remove('hidden');
+    }
+
+    // =========================================================================
+    // 7. DISEGNO FRECCE VETTORIALI, RISSO CON FOTO REALE E AMBIENTI (540x960)
+    // =========================================================================
+    function drawArrowVector(x, y, dir, size, fillColor = '#ffffff', strokeColor = '#141124') {
+      ctx.save();
+      ctx.translate(x, y);
+      const angles = [Math.PI, Math.PI / 2, -Math.PI / 2, 0];
+      ctx.rotate(angles[dir]);
+
+      const s = size;
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.52, -s * 0.24);
+      ctx.lineTo(s * 0.05, -s * 0.24);
+      ctx.lineTo(s * 0.05, -s * 0.52);
+      ctx.lineTo(s * 0.58, 0);
+      ctx.lineTo(s * 0.05, s * 0.52);
+      ctx.lineTo(s * 0.05, s * 0.24);
+      ctx.lineTo(-s * 0.52, s * 0.24);
+      ctx.closePath();
+
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = strokeColor;
+      ctx.stroke();
+
+      ctx.fillStyle = fillColor;
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawRisso(x, y, options = {}) {
+      const {
+        scale = 1,
+        tilt = 0,
+        shakeOffset = 0,
+        dizzy = false,
+        drinking = false,
+        fallen = false,
+        sleepingOnCouch = false
+      } = options;
+
+      ctx.save();
+      ctx.translate(x + shakeOffset, y);
+      ctx.scale(scale, scale);
+      ctx.rotate(tilt);
+
+      if (fallen) {
+        ctx.rotate(Math.PI / 2);
+      }
+
+      // Gambe / Jeans
+      ctx.fillStyle = '#2b4c7e';
+      ctx.fillRect(-22, 35, 16, 48);
+      ctx.fillRect(6, 35, 16, 48);
+
+      // Scarpe
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-26, 80, 22, 10);
+      ctx.fillRect(4, 80, 22, 10);
+
+      // Felpa rosso-arancio abbinata alla foto
+      ctx.fillStyle = '#e63946';
+      ctx.beginPath();
+      ctx.roundRect(-30, -22, 60, 62, 14);
+      ctx.fill();
+
+      // Cappuccio / colletto e laccetti bianchi della felpa
+      ctx.fillStyle = '#c1121f';
+      ctx.beginPath();
+      ctx.arc(0, -20, 24, 0, Math.PI);
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-9, -12);
+      ctx.lineTo(-11, 10);
+      ctx.moveTo(9, -12);
+      ctx.lineTo(11, 10);
+      ctx.stroke();
+
+      // Tasca felpa
+      ctx.fillStyle = '#ba181b';
+      ctx.fillRect(-18, 14, 36, 18);
+
+      // TESTA: Faccia reale dalla foto allegata
+      ctx.save();
+      const headW = 68;
+      const headH = 76;
+      const headY = -56;
+
+      if (rissoFaceImg.complete && rissoFaceImg.naturalWidth > 0) {
+        ctx.drawImage(rissoFaceImg, -headW / 2, headY - headH / 2, headW, headH);
+      } else {
+        ctx.fillStyle = '#ffcdb2';
+        ctx.beginPath();
+        ctx.arc(0, headY, 28, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      if (sleepingOnCouch) {
+        ctx.fillStyle = 'rgba(20, 17, 36, 0.85)';
+        ctx.beginPath();
+        ctx.roundRect(-22, headY - 6, 18, 9, 4);
+        ctx.roundRect(4, headY - 6, 18, 9, 4);
+        ctx.fill();
+
+        ctx.strokeStyle = '#ffbe0b';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.arc(0, headY - 2, 36, Math.PI, 0);
+        ctx.stroke();
+        ctx.fillStyle = '#ff006e';
+        ctx.beginPath();
+        ctx.roundRect(-41, headY - 12, 13, 26, 6);
+        ctx.roundRect(28, headY - 12, 13, 26, 6);
+        ctx.fill();
+      } else if (dizzy || fallen) {
+        const starOrbit = wobblePhase * 1.4;
+        for (let s = 0; s < 3; s++) {
+          const a = starOrbit + (s * Math.PI * 2) / 3;
+          const sx = Math.cos(a) * 32;
+          const sy = headY - 40 + Math.sin(a) * 8;
+          ctx.fillStyle = '#ffbe0b';
+          ctx.font = 'bold 16px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('★', sx, sy);
+        }
+      }
+      ctx.restore();
+
+      // Braccia e Shaker
+      ctx.strokeStyle = '#e63946';
+      ctx.lineWidth = 11;
+      ctx.lineCap = 'round';
+
+      if (drinking) {
+        ctx.beginPath();
+        ctx.moveTo(22, -10);
+        ctx.lineTo(24, -40);
+        ctx.stroke();
+
+        ctx.save();
+        ctx.translate(22, -52);
+        ctx.rotate(-0.6);
+        drawShaker(0, 0);
+        ctx.restore();
+      } else if (!fallen && !sleepingOnCouch) {
+        ctx.beginPath();
+        ctx.moveTo(-26, -10);
+        ctx.lineTo(-10, 14);
+        ctx.moveTo(26, -10);
+        ctx.lineTo(10, 14);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function drawShaker(x, y, scale = 1) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+      ctx.fillStyle = '#adb5bd';
+      ctx.beginPath();
+      ctx.moveTo(-14, -18);
+      ctx.lineTo(14, -18);
+      ctx.lineTo(10, 22);
+      ctx.lineTo(-10, 22);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#ffbe0b';
+      ctx.fillRect(-10, -26, 20, 8);
+      ctx.fillRect(-6, -32, 12, 6);
+      ctx.restore();
+    }
+
+    function drawCouch(x, y, scale = 1) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+      ctx.fillStyle = '#3a86ff';
+      ctx.beginPath();
+      ctx.roundRect(-75, -35, 150, 55, 16);
+      ctx.fill();
+
+      ctx.fillStyle = '#5fa0ff';
+      ctx.beginPath();
+      ctx.roundRect(-80, 5, 160, 32, 12);
+      ctx.fill();
+
+      ctx.fillStyle = '#1d5bbf';
+      ctx.beginPath();
+      ctx.roundRect(-90, -10, 22, 52, 10);
+      ctx.roundRect(68, -10, 22, 52, 10);
+      ctx.fill();
+
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🛋️ DIVANO', 0, -45);
+      ctx.restore();
+    }
+
+    // =========================================================================
+    // 8. LOOP PRINCIPALE DI AGGIORNAMENTO E RENDERING (540x960)
+    // =========================================================================
+    function update(dt) {
+      stateTimer += dt;
+      wobblePhase += dt * 6.8;
+      if (screenShake > 0) screenShake = Math.max(0, screenShake - dt);
+      for (let i = 0; i < 4; i++) {
+        if (laneFlash[i] > 0) laneFlash[i] = Math.max(0, laneFlash[i] - dt * 4.5);
+      }
+
+      if (gameState === 'SHAKING') {
+        if (shakePhase === 'SHAKE') {
+          shakeTick += dt;
+          if (shakeTick > 0.16) {
+            shakeTick = 0;
+            sound.playShake();
+          }
+          if (stateTimer >= 1.7) {
+            shakePhase = 'DRINK';
+            stateTimer = 0;
+            sound.playPop(420);
+          }
+        } else if (shakePhase === 'DRINK') {
+          if (stateTimer >= 1.3) {
+            if (isRecipeCorrect) {
+              startRhythmMinigame();
+            } else {
+              shakePhase = 'FALL_WRONG';
+              stateTimer = 0;
+              sound.playFail();
+            }
+          }
+        } else if (shakePhase === 'FALL_WRONG') {
+          if (stateTimer >= 1.5) {
+            showBlackout('Oh no! Il bibitone non fa effetto!!!');
+          }
+        }
+      } else if (gameState === 'RHYTHM') {
+        rhythmTimeLeft -= dt;
+        if (rhythmTimeLeft <= 0) {
+          rhythmTimeLeft = 0;
+          failRhythmGame();
+          return;
+        }
+
+        // Velocizzato del 5% rispetto al precedente
+        spawnTimer -= dt;
+        if (spawnTimer <= 0) {
+          const speedRatio = rissoProgress / 100;
+          spawnTimer = 0.505 - speedRatio * 0.085 + (Math.random() * 0.085);
+          rhythmNotes.push({
+            dir: Math.floor(Math.random() * 4),
+            y: LANE_TOP_Y - 10,
+            hit: false,
+            missed: false
+          });
+        }
+
+        // Velocità di discesa +5% (437 px/s invece di 416 px/s)
+        const noteSpeed = 437 + (rissoProgress * 0.97);
+        for (const note of rhythmNotes) {
+          note.y += noteSpeed * dt;
+          if (!note.hit && !note.missed && note.y > TARGET_Y + 66) {
+            note.missed = true;
+            mistakes++;
+            rissoProgress = Math.max(0, rissoProgress - 5);
+            screenShake = 0.2;
+            hitFeedback = { text: `MANCATA! (${mistakes}/${MAX_MISTAKES})`, color: '#ff006e', alpha: 1 };
+            if (mistakes >= MAX_MISTAKES) {
+              failRhythmGame();
+              return;
+            }
+          }
+        }
+        rhythmNotes = rhythmNotes.filter(n => n.y < 990);
+
+        for (const p of hitParticles) {
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.life -= dt;
+        }
+        hitParticles = hitParticles.filter(p => p.life > 0);
+
+        if (hitFeedback.alpha > 0) {
+          hitFeedback.alpha = Math.max(0, hitFeedback.alpha - dt * 1.6);
+        }
+      } else if (gameState === 'FALL_FAIL') {
+        if (stateTimer >= 1.5) {
+          showBlackout('Oh no! Il bibitone ha fatto effetto troppo in fretta!!!');
+        }
+      } else if (gameState === 'COUCH_WIN') {
+        if (stateTimer >= 2.7) {
+          showBlackout('Tutto prontissimo per una fantastica serata con gli amici!');
+        }
+      }
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      bgGrad.addColorStop(0, '#241e4e');
+      bgGrad.addColorStop(0.55, '#352b6e');
+      bgGrad.addColorStop(0.55, '#4a3525');
+      bgGrad.addColorStop(1, '#261910');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      if (gameState === 'MENU') {
+        drawRisso(270, 560, { scale: 1.5, tilt: Math.sin(wobblePhase * 0.4) * 0.05 });
+      } else if (gameState === 'MIXING') {
+        drawRisso(270, 360, { scale: 0.9, tilt: Math.sin(wobblePhase * 0.5) * 0.04 });
+        ctx.fillStyle = '#6f4e37';
+        ctx.fillRect(50, 408, 440, 22);
+        ctx.fillStyle = '#4e3624';
+        ctx.fillRect(65, 430, 410, 70);
+        drawShaker(270, 390, 0.85);
+      } else if (gameState === 'SHAKING') {
+        ctx.fillStyle = '#fff';
+        ctx.font = '900 30px sans-serif';
+        ctx.textAlign = 'center';
+
+        if (shakePhase === 'SHAKE') {
+          const sx = Math.sin(stateTimer * 45) * 16;
+          const sy = Math.cos(stateTimer * 50) * 12;
+          ctx.fillText('SHAKERA IL BIBITONE!!', 270, 210);
+          drawRisso(270, 500, { scale: 1.45, shakeOffset: sx * 0.4, tilt: Math.sin(stateTimer * 30) * 0.08 });
+          drawShaker(270 + sx, 465 + sy, 1.35);
+        } else if (shakePhase === 'DRINK') {
+          ctx.fillText('GLUG, GLUG, GLUG...', 270, 210);
+          drawRisso(270, 500, { scale: 1.45, drinking: true, tilt: -0.1 });
+        } else if (shakePhase === 'FALL_WRONG') {
+          ctx.fillStyle = '#ffbe0b';
+          ctx.fillText('Niente... zero effetto...', 270, 210);
+          drawRisso(270, 580, { scale: 1.45, fallen: true });
+        }
+      } else if (gameState === 'RHYTHM' || gameState === 'FALL_FAIL' || gameState === 'COUCH_WIN') {
+        ctx.save();
+        if (gameState === 'RHYTHM') {
+          const intensity = 0.035 + (rissoProgress / 100) * 0.03;
+          const roomTilt = Math.sin(wobblePhase * 0.8) * intensity;
+          const shakeX = screenShake > 0 ? (Math.random() - 0.5) * 16 : 0;
+          const shakeY = screenShake > 0 ? (Math.random() - 0.5) * 16 : 0;
+          ctx.translate(270 + shakeX, 230 + shakeY);
+          ctx.rotate(roomTilt);
+          ctx.translate(-270, -230);
+        }
+
+        ctx.fillStyle = '#3b291c';
+        ctx.fillRect(-40, 275, 620, 110);
+
+        const couchX = 445;
+        const couchY = 265;
+        drawCouch(couchX, couchY, 0.82);
+
+        const startX = 75;
+        const endX = 405;
+        const currentX = startX + (endX - startX) * (rissoProgress / 100);
+
+        if (gameState === 'RHYTHM') {
+          const staggerTilt = Math.sin(wobblePhase * 1.55) * 0.38;
+          const staggerY = 248 + Math.abs(Math.cos(wobblePhase * 1.55)) * 12;
+          drawRisso(currentX, staggerY, { scale: 0.88, tilt: staggerTilt, dizzy: true });
+        } else if (gameState === 'FALL_FAIL') {
+          drawRisso(currentX, 295, { scale: 0.88, fallen: true });
+        } else if (gameState === 'COUCH_WIN') {
+          ctx.save();
+          ctx.translate(couchX, couchY - 8);
+          ctx.rotate(-Math.PI / 2.2);
+          drawRisso(0, 0, { scale: 0.88, sleepingOnCouch: true });
+          ctx.restore();
+
+          ctx.fillStyle = '#ffbe0b';
+          ctx.font = 'bold 26px sans-serif';
+          const zFloat = (stateTimer * 28) % 38;
+          ctx.fillText('Zzz...', couchX - 18, couchY - 65 - zFloat);
+        }
+
+        ctx.restore();
+
+        // HUD Rhythm Game Verticale a cascata
+        if (gameState === 'RHYTHM') {
+          ctx.fillStyle = 'rgba(0,0,0,0.78)';
+          ctx.fillRect(14, 42, 512, 26);
+          const timeRatio = rhythmTimeLeft / rhythmMaxTime;
+          ctx.fillStyle = timeRatio < 0.35 ? '#ff006e' : '#06d6a0';
+          ctx.fillRect(17, 45, 506 * timeRatio, 20);
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '900 14px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(
+            `TEMPO: ${rhythmTimeLeft.toFixed(1)}s  |  ERRORI: ${mistakes}/${MAX_MISTAKES}  |  DIVANO: ${Math.round(rissoProgress)}%`,
+            270,
+            60
+          );
+
+          ctx.fillStyle = 'rgba(11, 9, 24, 0.93)';
+          ctx.beginPath();
+          ctx.roundRect(14, LANE_TOP_Y - 25, 512, 555, 20);
+          ctx.fill();
+          ctx.strokeStyle = '#ffbe0b';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          // Zona di Impatto ben delineata in fondo alla cascata verticale
+          ctx.fillStyle = 'rgba(255, 190, 11, 0.11)';
+          ctx.beginPath();
+          ctx.roundRect(22, TARGET_Y - 58, 496, 116, 18);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255, 190, 11, 0.75)';
+          ctx.lineWidth = 3;
+          ctx.setLineDash([10, 6]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          for (let i = 0; i < 4; i++) {
+            const lx = LANE_X[i];
+
+            if (laneFlash[i] > 0) {
+              ctx.fillStyle = `rgba(255, 255, 255, ${laneFlash[i] * 0.22})`;
+              ctx.fillRect(lx - 52, LANE_TOP_Y - 15, 104, 520);
+            }
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(lx, LANE_TOP_Y - 10);
+            ctx.lineTo(lx, TARGET_Y);
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+            ctx.beginPath();
+            ctx.arc(lx, TARGET_Y, 48, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = DIRS[i].color;
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.arc(lx, TARGET_Y, 46, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.globalAlpha = 0.28;
+            drawArrowVector(lx, TARGET_Y, i, 48, '#ffffff', '#000000');
+            ctx.globalAlpha = 1;
+          }
+
+          ctx.fillStyle = '#ffbe0b';
+          ctx.font = '900 14px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('▲ TOCCA LA FRECCIA QUI QUANDO SCENDE ▲', 270, TARGET_Y + 78);
+
+          for (const note of rhythmNotes) {
+            if (note.hit) continue;
+            const nx = LANE_X[note.dir];
+            const inZone = Math.abs(note.y - TARGET_Y) <= 66;
+            ctx.save();
+            ctx.globalAlpha = note.missed ? 0.25 : 1;
+
+            if (inZone && !note.missed) {
+              ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+              ctx.beginPath();
+              ctx.arc(nx, note.y, 54, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            ctx.fillStyle = DIRS[note.dir].color;
+            ctx.beginPath();
+            ctx.arc(nx, note.y, 44, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#ffffff';
+            ctx.stroke();
+
+            drawArrowVector(nx, note.y, note.dir, 54, '#ffffff', '#141124');
+            ctx.restore();
+          }
+
+          for (const p of hitParticles) {
+            ctx.globalAlpha = Math.max(0, p.life / 0.38);
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.globalAlpha = 1;
+
+          if (hitFeedback.alpha > 0) {
+            ctx.globalAlpha = hitFeedback.alpha;
+            ctx.fillStyle = hitFeedback.color;
+            ctx.font = '900 25px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(hitFeedback.text, 270, LANE_TOP_Y - 40);
+            ctx.globalAlpha = 1;
+          }
+        }
+      }
+    }
+
+    function gameLoop(now) {
+      const dt = Math.min(0.05, (now - lastTime) / 1000);
+      lastTime = now;
+      update(dt);
+      render();
+      requestAnimationFrame(gameLoop);
+    }
+
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
